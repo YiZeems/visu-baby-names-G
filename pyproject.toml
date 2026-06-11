@@ -1,0 +1,19 @@
+[project]
+name = "visu-baby-names-G"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "altair>=5.0",
+    "pandas>=2.0",
+    "geopandas>=0.14",
+    "vega-datasets>=0.9",
+    "jupyter>=1.0",
+    "notebook>=7.0",
+    "ipykernel>=6.0",
+    "requests>=2.31",
+    "matplotlib>=3.7",
+    "scipy>=1.11",
+    "vegafusion>=2.0.3",
+    "vegafusion-python-embed>=1.6.9",
+    "vl-convert-python>=1.9.0.post1",
+]
