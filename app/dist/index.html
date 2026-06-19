@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Interactive exploration of French baby names (INSEE, 1900–2022): temporal trends, regional patterns, and gender trajectories."
+    />
+    <title>French Baby Names · Data Explorer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap"
+      rel="stylesheet"
+    />
+    <script type="module" crossorigin src="/assets/index-D86AGXMY.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-B-NEYtkM.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="header-shell">
+        <div class="header-top">
+          <div class="brand">
+            <div class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="32" height="32" rx="8" fill="currentColor" opacity="0.15" />
+                <path
+                  d="M8 22V10h3.2v4.8H16V10h3.2v12H16v-5.2h-4.8V22H8zm12.8 0V10H24v12h-3.2z"
+                  fill="currentColor"
+                />
+              </svg>
+            </div>
+            <div>
+              <h1>French Baby Names</h1>
+              <p class="eyebrow">INSEE registry · 1900–2022</p>
+            </div>
+          </div>
+          <dl class="stats" id="dataset-stats">
+            <div><dt>Names</dt><dd>—</dd></div>
+            <div><dt>Period</dt><dd>1900–2022</dd></div>
+            <div><dt>Decades</dt><dd>—</dd></div>
+          </dl>
+        </div>
+      </div>
+    </header>
+
+    <div class="section-nav-wrap">
+      <nav class="section-nav" aria-label="Dashboard sections">
+        <a href="#viz-temporal" data-section="viz-temporal">Temporal</a>
+        <a href="#viz-regional" data-section="viz-regional">Regional</a>
+        <a href="#viz-gender" data-section="viz-gender">Gender</a>
+      </nav>
+    </div>
+
+    <main class="main-shell">
+      <div id="loading" class="loading-panel" role="status" aria-live="polite">
+        <div class="spinner" aria-hidden="true"></div>
+        <p class="loading-title">Loading dataset</p>
+        <p class="loading-sub">Parsing CSV and GeoJSON files…</p>
+      </div>
+
+      <div id="app-content" class="hidden">
+        <section id="viz-temporal" class="viz-section" aria-labelledby="temporal-heading">
+          <header class="section-header">
+            <div class="section-heading-row">
+              <span class="section-index">01</span>
+              <div>
+                <span class="section-tag">Temporal analysis</span>
+                <h2 id="temporal-heading">Ranked popularity streams</h2>
+              </div>
+            </div>
+            <p class="section-lead">
+              Area bump chart for the top 20 names by sex. Each decade, names are stacked by rank
+              (most births at the top); band width encodes births and streams cross as rankings shift.
+            </p>
+          </header>
+          <div class="panel">
+            <div class="controls" id="stream-controls"></div>
+            <div class="chart-wrap chart-wrap--tall">
+              <div id="stream-chart" class="chart"></div>
+              <div id="stream-tooltip" class="tooltip hidden"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="viz-regional" class="viz-section" aria-labelledby="regional-heading">
+          <header class="section-header">
+            <div class="section-heading-row">
+              <span class="section-index">02</span>
+              <div>
+                <span class="section-tag">Spatial analysis</span>
+                <h2 id="regional-heading">Department map &amp; regional compass</h2>
+              </div>
+            </div>
+            <p class="section-lead">
+              Choropleth by department paired with a macro-region compass. Map color and
+              ray length both encode rate / 10k (share per 10,000 births in the department
+              or macro-region), not absolute birth counts.
+            </p>
+          </header>
+          <div class="panel">
+            <div class="controls" id="regional-controls"></div>
+            <div class="chart-wrap chart-wrap--map">
+              <div id="regional-chart" class="chart chart--split"></div>
+              <div id="regional-tooltip" class="tooltip hidden"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="viz-gender" class="viz-section" aria-labelledby="gender-heading">
+          <header class="section-header">
+            <div class="section-heading-row">
+              <span class="section-index">03</span>
+              <div>
+                <span class="section-tag">Gender analysis</span>
+                <h2 id="gender-heading">Gender ratio trajectories</h2>
+              </div>
+            </div>
+            <p class="section-lead">
+              Twenty-five trajectories from a 5×5 grid (female-ratio bands × top names at a
+              reference decade). Tracks how the gender mix of popular names evolves over time.
+            </p>
+          </header>
+          <div class="panel">
+            <div class="controls" id="gender-controls"></div>
+            <div class="chart-wrap chart-wrap--tall">
+              <div id="gender-chart" class="chart"></div>
+              <div id="gender-tooltip" class="tooltip hidden"></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-shell">
+        <div class="footer-col">
+          <p class="footer-brand">French Baby Names Explorer</p>
+          <p class="footer-meta">CSC 4IG07 · Group G · Data visualization project</p>
+        </div>
+        <div class="footer-col footer-col--right">
+          <p>Source: <a href="https://www.insee.fr/" target="_blank" rel="noopener">INSEE</a></p>
+          <p>Stack: D3.js · Vite</p>
+        </div>
+      </div>
+    </footer>
+
+  </body>
+</html>
