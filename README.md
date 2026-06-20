@@ -2,8 +2,6 @@
 
 Mini-project on French baby names (1900–2022) for **CSC 4IG07 — Data Visualization**.
 
-![French Baby Names Explorer — dashboard preview](app/images/after-dashboard.png)
-
 **Final deliverable:** interactive web app in [`app/`](app/) — three linked views over **time**, **space**, and **gender**. See [`app/README.md`](app/README.md) for design rationale, controls, and run instructions.
 
 | Section | Visualization |
