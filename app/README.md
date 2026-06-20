@@ -1,6 +1,6 @@
 # Baby Names — Web App
 
-![French Baby Names Explorer — dashboard preview](images/screenshot_2026-06-20-18_21_00@2x.png)
+![French Baby Names Explorer — dashboard preview](images/after-dashboard.png)
 
 Interactive JavaScript app with the **3 visualizations** shipped in this repo (see [Design rationale](#design-rationale) for how they replaced the first notebook iteration).
 
@@ -19,6 +19,29 @@ Our **first three chart choices** — prototyped in [`notebooks/baby_names_3_imp
 | **Temporal** | 1.6 *Popularity vines* (botanical metaphor) | Ranked area bump streams |
 | **Regional** | 2.1 Choropleth + 2.9 *Regional compass* | Same pairing (refined scales & layout) |
 | **Gender** | 3.3 *Boys vs girls per name* (silhouette icons) | Gender ratio trajectories |
+
+## Before & after
+
+<table>
+  <tr>
+    <th align="center" width="48%">Before — <code>baby_names_3_implementation.ipynb</code></th>
+    <th align="center" width="52%">After — this web app</th>
+  </tr>
+  <tr>
+    <td valign="top">
+      <p><strong>1 — Temporal</strong> · <em>Popularity vines</em></p>
+      <img src="images/before-temporal-vines.png" alt="Before: popularity vines" width="100%" />
+      <p><strong>2 — Regional</strong> · choropleth + compass</p>
+      <img src="images/before-regional-map.png" alt="Before: department map and regional compass" width="100%" />
+      <p><strong>3 — Gender</strong> · <em>Boys vs girls</em> silhouettes</p>
+      <img src="images/before-gender-silhouettes.png" alt="Before: boys vs girls silhouettes" width="100%" />
+    </td>
+    <td valign="top">
+      <p><strong>Area bump streams</strong> · <strong>map + compass</strong> · <strong>gender trajectories</strong></p>
+      <img src="images/after-dashboard.png" alt="After: dashboard" width="100%" />
+    </td>
+  </tr>
+</table>
 
 ### Ranked popularity streams (area bump chart)
 
