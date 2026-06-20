@@ -2,13 +2,13 @@
 
 Mini-project on French baby names (1900–2022) for **CSC 4IG07 — Data Visualization**.
 
-**Final deliverable:** interactive web app in [`app/`](app/) — three linked views over **time**, **space**, and **gender**. See [`app/README.md`](app/README.md) for design rationale, controls, and run instructions.
+**Final deliverable:** interactive web app in [`app/`](app/) — three linked views over **time**, **space**, and **gender**. See [`app/README.md`](app/README.md) for details.
 
 | Section | Visualization |
 | --- | --- |
-| **1 — Temporal** | Ranked area bump streams — top 20 (D3) |
-| **2 — Regional** | Choropleth map + regional compass (D3 + GeoJSON) |
-| **3 — Gender** | Gender ratio trajectories — 25 names, 5 bands (D3) |
+| **1 — Temporal** | Ranked area bump streams — top 20 |
+| **2 — Regional** | Choropleth map + regional compass |
+| **3 — Gender** | Gender ratio trajectories — 25 names, 5 bands |
 
 ## Design rationale
 
