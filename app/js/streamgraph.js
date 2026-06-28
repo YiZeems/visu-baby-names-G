@@ -4,7 +4,6 @@ import { natDecRows } from './data.js';
 
 const BUMP_N = 20;
 
-/** Pick name vs rank label from available band / column space. */
 function bumpStreamLabel(name, bandHPx, decadeStepPx) {
   if (bandHPx < 11) return { type: 'none' };
 
@@ -23,7 +22,7 @@ function bumpStreamLabel(name, bandHPx, decadeStepPx) {
   return { type: 'none' };
 }
 
-function buildBumpData(genderRaw, sexLabel, decadeFrom, nNames = BUMP_N) {
+function buildBumpData(genderRaw, sexLabel, decadeFrom, nNames = BUMP_N, normalized = false) {
   const all = natDecRows(genderRaw, sexLabel).filter((r) => r.decade >= decadeFrom);
   const totals = d3.rollup(all, (v) => d3.sum(v, (d) => d.nombre), (d) => d.preusuel);
   const topNames = [...totals.entries()]
@@ -50,20 +49,26 @@ function buildBumpData(genderRaw, sexLabel, decadeFrom, nNames = BUMP_N) {
 
   const byDecade = decades.map((decade) => {
     const items = topNames
-      .map((name) => ({
-        name,
-        value: lookup.get(`${name}|${decade}`)?.nombre ?? 0,
-      }))
+      .map((name) => {
+        const r = lookup.get(`${name}|${decade}`);
+        return {
+          name,
+          value: r?.nombre ?? 0,
+          share: r?.share ?? 0,
+        };
+      })
       .sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
 
     let cum = 0;
     return items.map((item, rank) => {
+      const stackVal = normalized ? item.share : item.value;
       const y0 = cum;
-      cum += item.value;
+      cum += stackVal;
       return {
         decade,
         name: item.name,
         value: item.value,
+        share: item.share,
         rank: rank + 1,
         y0,
         y1: cum,
@@ -81,19 +86,38 @@ function buildBumpData(genderRaw, sexLabel, decadeFrom, nNames = BUMP_N) {
         y0: pt.y0,
         y1: pt.y1,
         value: pt.value,
+        share: pt.share,
         rank: pt.rank,
       };
     }),
   }));
 
-  const yMax = d3.max(byDecade, (d) => d[d.length - 1]?.y1 ?? 0) || 1;
+  const yMax = normalized ? 1.0 : (d3.max(byDecade, (d) => d[d.length - 1]?.y1 ?? 0) || 1);
   const startRank = byDecade[0] ?? [];
 
   return { rows, topNames, decades, series, byDecade, yMax, startRank, lookup };
 }
 
 export function initStreamgraph(container, controlsEl, tooltipEl, genderRaw, decades) {
-  const state = { sex: 'Female', from: decades[0] ?? 1900, highlight: null };
+  const state = { sex: 'Female', from: decades[0] ?? 1900, highlight: null, normalize: false };
+
+  // Stored selections for hover manipulation without re-render
+  let _streamPaths = null;
+  let _labelGroups = null;
+
+  function applyHighlight(name) {
+    if (!_streamPaths) return;
+    _streamPaths.attr('opacity', (d) => name ? (d.name === name ? 0.95 : 0.1) : 0.8);
+    _labelGroups?.attr('opacity', function () {
+      const n = this.getAttribute('data-name');
+      return name ? (n === name ? 1 : 0.05) : 1;
+    });
+  }
+
+  function layerOpacity(name) {
+    if (!state.highlight) return 0.8;
+    return state.highlight === name ? 0.95 : 0.1;
+  }
 
   controlsEl.innerHTML = `
     <div class="control-group">
@@ -104,6 +128,13 @@ export function initStreamgraph(container, controlsEl, tooltipEl, genderRaw, dec
       </div>
     </div>
     ${decadeSliderHtml('stream-from', 'From decade', decades, state.from)}
+    <div class="control-group">
+      <label>Band width</label>
+      <div class="radio-group">
+        <label><input type="radio" name="stream-norm" value="abs" checked /> Births</label>
+        <label><input type="radio" name="stream-norm" value="norm" /> Share</label>
+      </div>
+    </div>
   `;
 
   controlsEl.querySelectorAll('input[name="stream-sex"]').forEach((el) => {
@@ -114,10 +145,15 @@ export function initStreamgraph(container, controlsEl, tooltipEl, genderRaw, dec
     });
   });
 
+  controlsEl.querySelectorAll('input[name="stream-norm"]').forEach((el) => {
+    el.addEventListener('change', () => {
+      state.normalize = el.value === 'norm';
+      render();
+    });
+  });
+
   bindDecadeSlider(controlsEl, 'stream-from', {
-    onInput: (decade) => {
-      state.from = decade;
-    },
+    onInput: (decade) => { state.from = decade; },
     onChange: () => {
       state.highlight = null;
       render();
@@ -138,20 +174,11 @@ export function initStreamgraph(container, controlsEl, tooltipEl, genderRaw, dec
     tooltipEl.style.top = `${event.clientY - rect.top + 12}px`;
   }
 
-  function hideTooltip() {
-    tooltipEl.classList.add('hidden');
-  }
-
-  function layerOpacity(name) {
-    if (!state.highlight) return 0.9;
-    return state.highlight === name ? 0.95 : 0.22;
-  }
+  function hideTooltip() { tooltipEl.classList.add('hidden'); }
 
   function render() {
     const { rows, decades: decs, series, yMax, startRank } = buildBumpData(
-      genderRaw,
-      state.sex,
-      state.from,
+      genderRaw, state.sex, state.from, BUMP_N, state.normalize,
     );
 
     if (!rows.length) {
@@ -170,19 +197,14 @@ export function initStreamgraph(container, controlsEl, tooltipEl, genderRaw, dec
     container.innerHTML = '';
     const root = d3.select(container).append('div').attr('class', 'stream-root');
 
-    root
-      .append('p')
-      .attr('class', 'chart-inline-title')
-      .text(
-        `Ranked popularity streams — top ${BUMP_N} (${state.sex === 'Female' ? 'Girls' : 'Boys'})`,
-      );
+    root.append('p').attr('class', 'chart-inline-title').text(
+      `Ranked popularity streams — top ${BUMP_N} (${state.sex === 'Female' ? 'Girls' : 'Boys'})`,
+    );
 
-    root
-      .append('p')
-      .attr('class', 'chart-inline-subtitle')
-      .text(
-        `Vertical order = rank by births each decade; band width = births. Streams cross as rankings shift (${state.from}s–${decs[decs.length - 1]}s).`,
-      );
+    const subtitle = state.normalize
+      ? `Share of top-${BUMP_N} pool by decade — each decade sums to 100%, revealing rank even when diversity grows. (${state.from}s–${decs[decs.length - 1]}s)`
+      : `Vertical order = rank by births each decade; band width = births. Streams cross as rankings shift (${state.from}s–${decs[decs.length - 1]}s).`;
+    root.append('p').attr('class', 'chart-inline-subtitle').text(subtitle);
 
     const layout = root.append('div').attr('class', 'bump-layout');
 
@@ -204,6 +226,12 @@ export function initStreamgraph(container, controlsEl, tooltipEl, genderRaw, dec
         .on('click', () => {
           state.highlight = state.highlight === item.name ? null : item.name;
           render();
+        })
+        .on('mouseenter', () => {
+          if (!state.highlight) applyHighlight(item.name);
+        })
+        .on('mouseleave', () => {
+          if (!state.highlight) applyHighlight(null);
         });
 
       li.append('span')
@@ -224,10 +252,7 @@ export function initStreamgraph(container, controlsEl, tooltipEl, genderRaw, dec
         .style('opacity', layerOpacity(item.name));
     });
 
-    sidebar
-      .append('p')
-      .attr('class', 'bump-scale-note')
-      .text('Dot size ∝ births in first decade');
+    sidebar.append('p').attr('class', 'bump-scale-note').text('Dot size ∝ births in first decade');
 
     const svg = layout
       .append('svg')
@@ -236,17 +261,8 @@ export function initStreamgraph(container, controlsEl, tooltipEl, genderRaw, dec
       .attr('width', chartW)
       .attr('height', height);
 
-    const x = d3
-      .scalePoint()
-      .domain(decs)
-      .range([plotLeft, plotRight])
-      .padding(0.12);
-
-    const y = d3
-      .scaleLinear()
-      .domain([0, yMax])
-      .nice()
-      .range([height - margin.bottom, margin.top]);
+    const x = d3.scalePoint().domain(decs).range([plotLeft, plotRight]).padding(0.12);
+    const y = d3.scaleLinear().domain([0, yMax]).nice().range([height - margin.bottom, margin.top]);
 
     const decadeStepPx =
       decs.length > 1 ? Math.abs(x(decs[1]) - x(decs[0])) : plotRight - plotLeft;
@@ -262,8 +278,7 @@ export function initStreamgraph(container, controlsEl, tooltipEl, genderRaw, dec
       .attr('height', height - margin.top - margin.bottom);
 
     decs.forEach((dec) => {
-      svg
-        .append('text')
+      svg.append('text')
         .attr('x', x(dec))
         .attr('y', 18)
         .attr('text-anchor', 'middle')
@@ -280,7 +295,7 @@ export function initStreamgraph(container, controlsEl, tooltipEl, genderRaw, dec
 
     const g = svg.append('g').attr('clip-path', 'url(#bump-plot-clip)');
 
-    g.selectAll('path.bump-stream')
+    _streamPaths = g.selectAll('path.bump-stream')
       .data(series)
       .join('path')
       .attr('class', 'bump-stream')
@@ -288,11 +303,18 @@ export function initStreamgraph(container, controlsEl, tooltipEl, genderRaw, dec
       .attr('fill', (d) => color(d.name))
       .attr('stroke', 'rgba(255,255,255,0.85)')
       .attr('stroke-width', 0.7)
-      .attr('opacity', (d) => (state.highlight ? layerOpacity(d.name) : 0.8))
+      .attr('opacity', (d) => layerOpacity(d.name))
       .style('cursor', 'pointer')
       .on('click', (_, d) => {
         state.highlight = state.highlight === d.name ? null : d.name;
         render();
+      })
+      .on('mouseenter', (_, d) => {
+        if (!state.highlight) applyHighlight(d.name);
+      })
+      .on('mouseleave', () => {
+        if (!state.highlight) applyHighlight(null);
+        hideTooltip();
       })
       .on('mousemove', function (event, d) {
         const [mx] = d3.pointer(event, svg.node());
@@ -300,19 +322,14 @@ export function initStreamgraph(container, controlsEl, tooltipEl, genderRaw, dec
         let minDist = Infinity;
         decs.forEach((dec) => {
           const dist = Math.abs(x(dec) - mx);
-          if (dist < minDist) {
-            minDist = dist;
-            nearest = dec;
-          }
+          if (dist < minDist) { minDist = dist; nearest = dec; }
         });
         const pt = d.points.find((p) => p.decade === nearest);
         const row = rows.find((r) => r.preusuel === d.name && r.decade === nearest);
-        if (row && pt) {
-          showTooltip(event, { ...row, rank: pt.rank });
-        }
-      })
-      .on('mouseleave', hideTooltip);
+        if (row && pt) showTooltip(event, { ...row, rank: pt.rank });
+      });
 
+    // Build labels AFTER stream paths so we can store both selections
     series.forEach((s) => {
       const peak = s.points.reduce(
         (best, pt) => (pt.value > best.value ? pt : best),
@@ -329,6 +346,7 @@ export function initStreamgraph(container, controlsEl, tooltipEl, genderRaw, dec
       const badge = svg
         .append('g')
         .attr('class', 'bump-stream-label')
+        .attr('data-name', s.name)
         .attr('transform', `translate(${cx},${cy})`)
         .attr('opacity', layerOpacity(s.name))
         .style('pointer-events', 'none');
@@ -348,12 +366,7 @@ export function initStreamgraph(container, controlsEl, tooltipEl, genderRaw, dec
         return;
       }
 
-      badge
-        .append('circle')
-        .attr('r', 8)
-        .attr('fill', CHART_THEME.badgeFill)
-        .attr('opacity', 0.92);
-
+      badge.append('circle').attr('r', 8).attr('fill', CHART_THEME.badgeFill).attr('opacity', 0.92);
       badge
         .append('text')
         .attr('text-anchor', 'middle')
@@ -363,6 +376,11 @@ export function initStreamgraph(container, controlsEl, tooltipEl, genderRaw, dec
         .attr('font-weight', 700)
         .text(peak.rank);
     });
+
+    _labelGroups = svg.selectAll('g.bump-stream-label');
+
+    // Apply click-highlight state after building DOM
+    if (state.highlight) applyHighlight(state.highlight);
   }
 
   render();

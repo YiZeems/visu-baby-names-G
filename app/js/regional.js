@@ -149,10 +149,10 @@ function renderChoropleth(parent, geo, mapRows, tooltipEl, uid) {
   appendPanelHeader(svg, width, 'Department map', RATE_METRIC.mapSubtitle);
 
   const maxRate = d3.max(mapRows, (d) => d.rate_per_10k) || 1;
-  const color = d3
-    .scaleSequential()
-    .domain([0, maxRate])
-    .interpolator(d3.interpolateRgb(CHART_THEME.seqLow, CHART_THEME.seqHigh));
+  const validRates = mapRows.map((d) => d.rate_per_10k).filter((v) => v > 0).sort(d3.ascending);
+  const color = validRates.length > 1
+    ? d3.scaleSequentialQuantile(validRates, d3.interpolateRgb(CHART_THEME.seqLow, CHART_THEME.seqHigh))
+    : d3.scaleSequential().domain([0, Math.max(maxRate, 0.01)]).interpolator(d3.interpolateRgb(CHART_THEME.seqLow, CHART_THEME.seqHigh));
 
   const projection = d3.geoMercator().fitExtent(
     [[20, LAYOUT.chartTop + 4], [width - 20, height + LAYOUT.footerY - 20]],
@@ -168,10 +168,11 @@ function renderChoropleth(parent, geo, mapRows, tooltipEl, uid) {
     const corseNote = row?.dpt === '20' && (code === '2A' || code === '2B')
       ? '<br/><span class="regional-tooltip-note">Whole-island aggregate (INSEE 20)</span>'
       : '';
+    const rateDisplay = rate === 0 ? '0' : rate < 0.1 ? rate.toFixed(2) : rate.toFixed(1);
     tooltipEl.innerHTML = `
       <strong>${feature.properties.nom}</strong>
       ${row
-        ? `Births (name): ${fmtNum(row.nombre)}<br/>Dept. births (all): ${fmtNum(row.total_births)}<br/>${RATE_METRIC.label}: ${rate.toFixed(1)}${corseNote}`
+        ? `Births (name): ${fmtNum(row.nombre)}<br/>Dept. births (all): ${fmtNum(row.total_births)}<br/>${RATE_METRIC.label}: ${rateDisplay}${corseNote}`
         : 'No births'}
     `;
     const rect = parent.closest('.chart-wrap')?.getBoundingClientRect() ?? parent.getBoundingClientRect();
@@ -221,10 +222,10 @@ function renderCompass(parent, flowerData, name, decade, tooltipEl, uid) {
   appendPanelHeader(svg, width, 'Regional compass', RATE_METRIC.compassSubtitle);
 
   const maxRate = Math.max(d3.max(flowerData, (d) => d.rate_per_10k), 0.1);
-  const color = d3
-    .scaleSequential()
-    .domain([0, maxRate])
-    .interpolator(d3.interpolateRgb(CHART_THEME.seqLow, CHART_THEME.seqHigh));
+  const compassRates = flowerData.map((d) => d.rate_per_10k).filter((v) => v > 0).sort(d3.ascending);
+  const color = compassRates.length > 1
+    ? d3.scaleSequentialQuantile(compassRates, d3.interpolateRgb(CHART_THEME.seqLow, CHART_THEME.seqHigh))
+    : d3.scaleSequential().domain([0, maxRate]).interpolator(d3.interpolateRgb(CHART_THEME.seqLow, CHART_THEME.seqHigh));
 
   const regionLabelPad = 30;
   const maxR = Math.min(innerW, innerH) / 2 - regionLabelPad * 0.45;
@@ -306,6 +307,9 @@ function renderCompass(parent, flowerData, name, decade, tooltipEl, uid) {
         .attr('y', y)
         .attr('dominant-baseline', 'middle')
         .attr('class', 'regional-compass-label')
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 3)
+        .attr('paint-order', 'stroke fill')
         .text(line);
     });
   });

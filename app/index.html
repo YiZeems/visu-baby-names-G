@@ -36,9 +36,9 @@
             </div>
           </div>
           <dl class="stats" id="dataset-stats">
-            <div><dt>Names</dt><dd>—</dd></div>
+            <div><dt>Names</dt><dd>...</dd></div>
             <div><dt>Period</dt><dd>1900–2022</dd></div>
-            <div><dt>Decades</dt><dd>—</dd></div>
+            <div><dt>Decades</dt><dd>...</dd></div>
           </dl>
         </div>
       </div>
@@ -60,6 +60,23 @@
       </div>
 
       <div id="app-content" class="hidden">
+
+        <div class="page-intro">
+          <p class="page-intro-eyebrow">Design rationale</p>
+          <p>
+            Our initial chart designs were discarded after a critical review: each carried a high
+            risk of chartjunk, adding visual complexity without proportional information gain.
+            After rethinking over the weekend, we settled on three more rigorous visualizations
+            covering the three core dimensions of the dataset (time, space, and gender) with
+            minimal visual noise and maximum useful encoding.
+          </p>
+          <p>
+            The charts below reflect a second round of iteration, incorporating peer feedback
+            received in the course forum. Each section notes the original strengths, the weaknesses
+            identified, and the concrete changes we made in response.
+          </p>
+        </div>
+
         <section id="viz-temporal" class="viz-section" aria-labelledby="temporal-heading">
           <header class="section-header">
             <div class="section-heading-row">
@@ -73,6 +90,21 @@
               Area bump chart for the top 20 names by sex. Each decade, names are stacked by rank
               (most births at the top); band width encodes births and streams cross as rankings shift.
             </p>
+            <div class="design-note">
+              <div class="design-note-block design-note-block--strength">
+                <span class="design-note-label">Strengths</span>
+                <p>Encodes rank and volume simultaneously, so a century of trends becomes readable
+                in a single glance. Stream crossings naturally draw the eye to the moments where
+                one name overtook another.</p>
+              </div>
+              <div class="design-note-block design-note-block--feedback">
+                <span class="design-note-label">Peer feedback incorporated</span>
+                <p><strong>Hover highlight:</strong> mousing over a stream or a name in the sidebar
+                now fades all others, enabling details on demand without a click.</p>
+                <p><strong>Share mode:</strong> a new toggle normalizes each decade to 100% of the
+                top 20 pool, preventing the visual collapse caused by post 1960s name diversity.</p>
+              </div>
+            </div>
           </header>
           <div class="panel">
             <div class="controls" id="stream-controls"></div>
@@ -93,10 +125,25 @@
               </div>
             </div>
             <p class="section-lead">
-              Choropleth by department paired with a macro-region compass. Map color and
+              Choropleth by department paired with a macro region compass. Map color and
               ray length both encode rate / 10k (share per 10,000 births in the department
               or macro-region), not absolute birth counts.
             </p>
+            <div class="design-note">
+              <div class="design-note-block design-note-block--strength">
+                <span class="design-note-label">Strengths</span>
+                <p>Two levels of reading without data duplication: departmental granularity on the
+                left, macro-regional synthesis on the right. Rate per 10k corrects for population
+                size so large departments do not dominate.</p>
+              </div>
+              <div class="design-note-block design-note-block--feedback">
+                <span class="design-note-label">Peer feedback incorporated</span>
+                <p><strong>Quantile color scale:</strong> colors now spread evenly across the actual
+                data distribution, so a few outliers no longer collapse the rest of the map to black.</p>
+                <p><strong>Label readability:</strong> compass labels now carry white halos; tooltip
+                rate values show two decimal places when below 1, fixing the misleading "0.0" display.</p>
+              </div>
+            </div>
           </header>
           <div class="panel">
             <div class="controls" id="regional-controls"></div>
@@ -117,9 +164,26 @@
               </div>
             </div>
             <p class="section-lead">
-              Twenty-five trajectories from a 5×5 grid (female-ratio bands × top names at a
-              reference decade). Tracks how the gender mix of popular names evolves over time.
+              Trajectories from a 5x5 grid (female ratio bands × top names at a reference decade).
+              Tracks how the gender mix of popular names evolves over time. Flat trajectories
+              stuck at 0% or 100% are hidden automatically.
             </p>
+            <div class="design-note">
+              <div class="design-note-block design-note-block--strength">
+                <span class="design-note-label">Strengths</span>
+                <p>Reveals names that drift across the gender line over decades, a phenomenon
+                invisible in a simple bar chart. The 5x5 grid keeps comparison structured
+                without becoming overwhelming.</p>
+              </div>
+              <div class="design-note-block design-note-block--feedback">
+                <span class="design-note-label">Peer feedback incorporated</span>
+                <p><strong>Flat curve filter:</strong> names permanently stuck below 6% or above
+                94% female (e.g. LUCAS) are now hidden: they carry no drift information and
+                only added clutter.</p>
+                <p><strong>Hover highlight:</strong> mousing over a name in the legend fades all
+                other curves, providing instant details on demand without requiring a click.</p>
+              </div>
+            </div>
           </header>
           <div class="panel">
             <div class="controls" id="gender-controls"></div>

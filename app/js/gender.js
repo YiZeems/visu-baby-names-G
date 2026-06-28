@@ -68,17 +68,25 @@ export function ratioGrid(decadeRows) {
   return { grid, binRanges, entries };
 }
 
+function isFlat(points, threshold = 0.06) {
+  if (!points.length) return true;
+  const ratios = points.map((p) => p.female_ratio);
+  return Math.max(...ratios) <= threshold || Math.min(...ratios) >= 1 - threshold;
+}
+
 function buildTrajectories(genderRaw, refDecade) {
   const refRows = genderRaw.filter((r) => r.decade === refDecade);
   const { binRanges, entries } = ratioGrid(refRows);
 
-  const trajectories = entries.map((meta) => ({
-    ...meta,
-    color: trajectoryColor(meta.bandIdx, meta.colIdx),
-    points: genderRaw
-      .filter((r) => r.preusuel === meta.name && r.total > 0)
-      .sort((a, b) => a.decade - b.decade),
-  }));
+  const trajectories = entries
+    .map((meta) => ({
+      ...meta,
+      color: trajectoryColor(meta.bandIdx, meta.colIdx),
+      points: genderRaw
+        .filter((r) => r.preusuel === meta.name && r.total > 0)
+        .sort((a, b) => a.decade - b.decade),
+    }))
+    .filter((t) => !isFlat(t.points));
 
   return { trajectories, binRanges };
 }
@@ -149,6 +157,25 @@ export function initGenderTrajectory(container, controlsEl, tooltipEl, genderRaw
     bandFilter: 'all',
     highlight: null,
   };
+
+  // Stored selections for hover highlight without re-render
+  let _trajPaths = null;
+  let _trajLabels = null;
+
+  function applyGenderHighlight(name) {
+    if (!_trajPaths) return;
+    _trajPaths.attr('opacity', function () {
+      if (!name) return this.getAttribute('data-init-op');
+      return this.getAttribute('data-name') === name ? 1 : 0.07;
+    }).attr('stroke-width', function () {
+      if (!name) return this.getAttribute('data-init-sw');
+      return this.getAttribute('data-name') === name ? 3.2 : 1.0;
+    });
+    _trajLabels?.attr('opacity', function () {
+      if (!name) return this.getAttribute('data-init-op');
+      return this.getAttribute('data-name') === name ? 1 : 0.04;
+    });
+  }
 
   function renderControls(trajectories) {
     const bands = [...new Set(trajectories.map((t) => t.bandIdx))].sort((a, b) => a - b);
@@ -343,6 +370,9 @@ export function initGenderTrajectory(container, controlsEl, tooltipEl, genderRaw
     const trajG = chartG.append('g').attr('class', 'trajectories');
 
     visible.forEach((t) => {
+      const initOp = lineOpacity(t);
+      const initSw = lineWidth(t);
+
       const g = trajG
         .append('g')
         .attr('class', 'trajectory')
@@ -356,8 +386,11 @@ export function initGenderTrajectory(container, controlsEl, tooltipEl, genderRaw
         .datum(t.points)
         .attr('fill', 'none')
         .attr('stroke', t.color)
-        .attr('stroke-width', lineWidth(t))
-        .attr('opacity', lineOpacity(t))
+        .attr('stroke-width', initSw)
+        .attr('opacity', initOp)
+        .attr('data-name', t.name)
+        .attr('data-init-op', initOp)
+        .attr('data-init-sw', initSw)
         .attr('d', line);
 
       g.selectAll('circle')
@@ -369,18 +402,22 @@ export function initGenderTrajectory(container, controlsEl, tooltipEl, genderRaw
         .attr('fill', t.color)
         .attr('stroke', CHART_THEME.streamStroke)
         .attr('stroke-width', 1)
-        .attr('opacity', lineOpacity(t))
+        .attr('opacity', initOp)
         .on('mousemove', (event, d) => showTooltip(event, d, t))
         .on('mouseleave', hideTooltip);
     });
 
+    _trajPaths = trajG.selectAll('.trajectory path');
+
     const labelsG = chartG.append('g').attr('class', 'trajectory-labels');
     layoutTrajectoryLabels(visible, x, y).forEach(({ t, px, py, dx, dy, anchor }) => {
       const isHi = state.highlight === t.name;
-      const opacity = isHi ? 1 : Math.min(lineOpacity(t) + 0.25, 0.92);
+      const initOp = isHi ? 1 : Math.min(lineOpacity(t) + 0.25, 0.92);
       labelsG
         .append('text')
         .attr('class', 'trajectory-name-label')
+        .attr('data-name', t.name)
+        .attr('data-init-op', initOp)
         .attr('x', px + dx)
         .attr('y', py + dy)
         .attr('text-anchor', anchor)
@@ -388,10 +425,12 @@ export function initGenderTrajectory(container, controlsEl, tooltipEl, genderRaw
         .attr('font-size', isHi ? 11 : 9)
         .attr('font-weight', isHi ? 700 : 600)
         .attr('fill', t.color)
-        .attr('opacity', opacity)
+        .attr('opacity', initOp)
         .style('pointer-events', 'none')
         .text(t.name);
     });
+
+    _trajLabels = labelsG.selectAll('text');
 
     svg
       .append('g')
@@ -457,6 +496,12 @@ export function initGenderTrajectory(container, controlsEl, tooltipEl, genderRaw
             state.highlight = state.highlight === t.name ? null : t.name;
             state.bandFilter = 'all';
             render();
+          })
+          .on('mouseenter', () => {
+            if (!state.highlight) applyGenderHighlight(t.name);
+          })
+          .on('mouseleave', () => {
+            if (!state.highlight) applyGenderHighlight(null);
           });
         li.html(
           `<span style="color:${t.color}">●</span> <span>${t.name}</span><small>${refPt ? fmtPct(refPt.female_ratio) : '—'} · ${refPt ? fmtNum(refPt.total) : ''}</small>`,
